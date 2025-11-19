@@ -4,9 +4,12 @@ import { Chessboard } from "react-chessboard";
 import { useParams } from "react-router-dom";
 import type { Game } from "../data/Game";
 import axios from "axios";
+import { useGame } from "../context/GameContext";
 
 export default function GameReplay() {
-    const { username, url } = useParams();
+    const { url } = useParams();
+    const username = localStorage.getItem("username")!;
+    const { setCurrentFen } = useGame();
 
     const [game, setGame] = useState<Game>();
     const [currentMove, setCurrentMove] = useState(0);
@@ -17,9 +20,12 @@ export default function GameReplay() {
 
     const fetchGame = async () => {
         try {
-            // Capitalize the first letter of username to match DB format
-            const capitalizedUsername = username!.charAt(0).toUpperCase() + username!.slice(1);
-            let response = await axios.get(`/api/games/${capitalizedUsername}/${url}`);
+            let response = await axios.get(`/api/games/${username}/${url}`, 
+                {
+                    headers:
+                    {Authorization: `Bearer ${localStorage.getItem("token")}`}
+                }
+            );
             setGame(response.data);
             setError(undefined);
         } catch (err: any) {
@@ -30,6 +36,7 @@ export default function GameReplay() {
     
     useEffect(() => {
         fetchGame();
+        setCurrentMove(0);
     }, [username, url]);
 
     // Parse PGN when game data is loaded
@@ -64,8 +71,11 @@ export default function GameReplay() {
         for (let i = 0; i < currentMove; i++) {
             chess.move(moves[i]);
         }
-        setPosition(chess.fen());
-    }, [currentMove, moves]);
+        const newFen = chess.fen();
+        setPosition(newFen);
+        // Update the FEN in context for the chatbot to use
+        setCurrentFen(newFen);
+    }, [currentMove, moves, setCurrentFen]);
 
     const goToMove = (index: number) => {
         setCurrentMove(index);
@@ -98,11 +108,11 @@ export default function GameReplay() {
     if (!game) {
         return <div style={{ textAlign: "center", marginTop: "50px" }}>Loading game...</div>;
     }
-
+    
     return (
         <div style={{ textAlign: "center" }}>
             <div style={{ marginBottom: "20px" }}>
-                <h3>{gameInfo.White} vs {gameInfo.Black}</h3>
+                <h3>{gameInfo.White} ({gameInfo.WhiteElo}) vs {gameInfo.Black} ({gameInfo.BlackElo}) </h3>
                 <p>{gameInfo.Event} - {gameInfo.Date}</p>
                 <p>Result: {gameInfo.Result}</p>
             </div>

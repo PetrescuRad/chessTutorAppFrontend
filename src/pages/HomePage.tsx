@@ -1,43 +1,51 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import type { User } from "../data/User";
+// src/pages/HomePage.tsx
+import { Box, Button, Stack, Grid } from "@mui/material";
+import HeaderCard from "../components/HeaderCard";
+import StatCard from "../components/StatCard";
+import { useNavigate } from "react-router-dom";
 
 const HomePage = () => {
-    const [loggedUser, setLoggedUser] = useState<User>();
-    
-    async function fetchUser() {
-        const token = localStorage.getItem("token");
-        try {
-            let response = await axios.get('/api/user/profile', 
-                {
-                    headers: {
-                    Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-            setLoggedUser(response.data);
-            console.log("Logged user: ", response.data.username);
-        } catch (err) {
-            console.log("Error fetching data: ", err);
-        }
+    const navigate = useNavigate();
+
+    const username = localStorage.getItem("username")!;
+
+    function handleLogout() {
+        localStorage.clear();
+        navigate("/login");
     }
 
-    useEffect(() => {
-       fetchUser();
-    }, []);
+    // Temporary dummy stats (replace with backend data later)
+    const stats = [
+        { title: "Games Played", value: 120 },
+        { title: "Win Rate", value: "62%" },
+        { title: "Average Accuracy", value: "78%" },
+        { title: "Elo Rating", value: 1450 },
+    ];
 
     return (
-    <div>
-      {loggedUser ? (
-        <>
-          <h2>Welcome, {loggedUser.username}</h2>
-          <p>Profile: {loggedUser["@id"]}</p>
-        </>
-      ) : (
-        <p>Loading user info...</p>
-      )}
-    </div>
-  );
+        <Box sx={{ p: 4 }}>
+            {/* Header */}
+            <HeaderCard username={username} subtitle="Analyze your latest games" />
+
+            <Grid container spacing={3} sx={{ mt: 2 }}>
+                {stats.map((stat) => (
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={stat.title}>
+                        <StatCard title={stat.title} value={stat.value} />
+                    </Grid>
+                ))}
+            </Grid>
+
+            {/* Action Buttons */}
+            <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
+                <Button variant="contained" color="primary" size="large" onClick={() => navigate('/analysis')}>
+                    Analyze Games
+                </Button>
+                <Button variant="outlined" color="secondary" size="large" onClick={handleLogout}>
+                    Logout
+                </Button>
+            </Stack>
+        </Box>
+    );
 };
 
 export default HomePage;

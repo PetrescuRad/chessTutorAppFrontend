@@ -36,9 +36,28 @@ const SignupPage: React.FC = () => {
         email: form.email,
         password: form.password,
       });
+      const { token, username } = response.data;
 
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("username", response.data.username);
+
+      // Step 3 — sync games
+      try {
+        await axios.post(
+          `http://localhost:8080/api/games/${username}/sync/all`,
+          {}, // body if needed
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        console.log("✅ Games synced successfully!");
+      } catch (syncErr) {
+        console.error("⚠️ Error syncing games:", syncErr);
+      }
+
+      // Step 4 — navigate
       navigate("/home");
     } catch (error: any) {
       alert(error.response?.data || "Signup failed");
